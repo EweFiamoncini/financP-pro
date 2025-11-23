@@ -13,6 +13,7 @@ Tudo roda diretamente no navegador, utilizando **Local Storage** para persistên
 
 <div align="center">
   <img src="assets/dashboard-preview.png" alt="Dashboard Mensal" width="800">
+  <img src="assets/dashboard-preview2.png" alt="Dashboard Mensal" width="800">
 </div>
 
 ---
@@ -56,12 +57,7 @@ Este projeto foi construído utilizando tecnologias web padrão, sem a necessida
 
 Não é necessário instalação de servidores (Node, PHP, Python).
 
-1.  **Clone o repositório** ou baixe o arquivo ZIP:
-    ```bash
-    git clone [https://github.com/SEU-USUARIO/financas-p-pro.git](https://github.com/SEU-USUARIO/financas-p-pro.git)
-    ```
-2.  **Abra o arquivo** `index.html` em qualquer navegador moderno (Chrome, Firefox, Edge, Safari).
-3.  **Pronto!** Comece a adicionar suas transações.
+Abre o Site: [Finança P. Pro](https://ewefiamoncini.github.io/financP-pro/)
 
 > **Nota:** Como os dados são salvos no `LocalStorage` do navegador, se você limpar o cache do navegador ou abrir em modo anônimo, os dados não estarão lá. Para uso em produção, recomenda-se fazer backup dos dados periodicamente (funcionalidade futura).
 
