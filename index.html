@@ -31,7 +31,7 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-2">
                 <i class="fas fa-wallet text-2xl text-emerald-400"></i>
-                <h1 class="text-xl font-bold tracking-wide">Finanças P.<span class="text-emerald-400"> Pro</span></h1>
+                <h1 class="text-xl font-bold tracking-wide">Finanças P. <span class="text-emerald-400">Pro</span></h1>
             </div>
             
             <!-- Controle de Data -->
@@ -319,20 +319,20 @@
             <div class="text-center md:text-left">
                 <div class="flex items-center justify-center md:justify-start gap-2 mb-2">
                     <i class="fas fa-wallet text-emerald-400"></i>
-                    <span class="font-bold text-lg">Finanças P.<span class="text-emerald-400"> Pro</span></span>
+                    <span class="font-bold text-lg">Finanças P. <span class="text-emerald-400">Pro</span></span>
                 </div>
                 <p class="text-slate-400 text-sm">Simplificando sua jornada para a liberdade financeira.</p>
             </div>
             
             <!-- Links Sociais / Contato -->
             <div class="flex items-center gap-6">
-                <a href="https://github.com/EweFiamoncini" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
+                <a href="#" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
                     <div class="p-2 bg-slate-700 rounded-full group-hover:bg-emerald-500 transition-colors">
                         <i class="fab fa-github text-xl"></i>
                     </div>
                     <span class="text-[10px] uppercase tracking-wider">GitHub</span>
                 </a>
-                <a href="https://www.linkedin.com/in/ewertonfiamoncini/" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
+                <a href="#" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
                     <div class="p-2 bg-slate-700 rounded-full group-hover:bg-blue-500 transition-colors">
                         <i class="fab fa-linkedin-in text-xl"></i>
                     </div>
@@ -348,8 +348,8 @@
 
             <!-- Créditos -->
             <div class="text-center md:text-right text-slate-500 text-xs">
-                <p class="mb-1">Desenvolvido por <i class="fas fa-code text-emerald-500 mx-1"></i><strong>Ewerton Fiamoncini | Dev FullStack</strong></p>
-                <p>&copy; 2024 Finanças P. Pro. v1.0</p>
+                <p class="mb-1">Desenvolvido por <i class="fas fa-code text-emerald-500 mx-1"></i><strong>Ewerton Fiamoncini</strong></p>
+                <p>&copy; <span id="copyrightYear"></span> Finanças P. Pro. v1.2.1</p>
             </div>
         </div>
     </footer>
@@ -373,6 +373,8 @@
             updateDateDisplay();
             renderAll();
             setTodayDateInput();
+            // Atualiza o ano no rodapé automaticamente
+            document.getElementById('copyrightYear').textContent = new Date().getFullYear();
         });
 
         function setTodayDateInput() {
@@ -665,7 +667,8 @@
             const monthlyStats = Array(12).fill(0).map(() => ({ receita: 0, fixa: 0, variavel: 0, investimento: 0 }));
 
             yearData.forEach(t => {
-                const month = new Date(t.date + 'T12:00:00').getMonth();
+                const tDate = new Date(t.date + 'T12:00:00');
+                const month = tDate.getMonth();
                 monthlyStats[month][t.type] += t.amount;
             });
 
