@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Pessoal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+    <style>
+        /* Estilos customizados para barra de rolagem e transições */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .transition-all { transition: all 0.3s ease; }
+        
+        /* Cores específicas para categorias */
+        .text-receita { color: #10b981; }
+        .bg-receita { background-color: #d1fae5; }
+        .text-fixa { color: #ef4444; }
+        .bg-fixa { background-color: #fee2e2; }
+        .text-variavel { color: #f59e0b; }
+        .bg-variavel { background-color: #fef3c7; }
+        .text-investimento { color: #3b82f6; }
+        .bg-investimento { background-color: #dbeafe; }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navegação -->
+    <header class="bg-slate-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-wallet text-2xl text-emerald-400"></i>
+                <h1 class="text-xl font-bold tracking-wide">Finanças P.<span class="text-emerald-400"> Pro</span></h1>
+            </div>
+            
+            <!-- Controle de Data -->
+            <div class="flex items-center bg-slate-700 rounded-lg p-1" id="dateControls">
+                <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-600 rounded-md text-gray-300 hover:text-white transition-colors" title="Mês Anterior">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="px-6 font-semibold text-lg min-w-[180px] text-center capitalize" id="currentDateDisplay">
+                    Janeiro 2024
+                </div>
+                <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-600 rounded-md text-gray-300 hover:text-white transition-colors" title="Próximo Mês">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Botões de Navegação de Visualização -->
+            <div class="flex space-x-2 text-sm">
+                <button onclick="switchView('monthly')" id="btnMonthly" class="px-4 py-2 rounded-lg bg-emerald-500 text-white font-medium shadow transition-all">
+                    <i class="fas fa-calendar-alt mr-1"></i> Mensal
+                </button>
+                <button onclick="switchView('annual')" id="btnAnnual" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-gray-300 font-medium transition-all">
+                    <i class="fas fa-chart-line mr-1"></i> Relatório Anual
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto px-4 py-6 w-full">
+        
+        <!-- Notificação de Cópia Automática -->
+        <div id="copyNotification" class="hidden fixed top-20 right-5 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 items-center animate-bounce">
+            <i class="fas fa-sync-alt mr-2 animate-spin"></i>
+            <div>
+                <p class="font-bold text-sm">Despesas Fixas Importadas!</p>
+                <p class="text-xs text-blue-100">Copiadas do mês anterior.</p>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmação de Exclusão -->
+        <div id="deleteModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100">
+                <div class="text-center mb-6">
+                    <div class="bg-red-100 p-3 rounded-full inline-block mb-3">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Confirmar Exclusão</h3>
+                    <p class="text-gray-500 text-sm mt-2">Tem certeza que deseja remover este item? Esta ação não pode ser desfeita.</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmDelete()" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors shadow-md">
+                        Sim, Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISTA MENSAL ================= -->
+        <div id="monthlyView" class="space-y-6 animate-fade-in">
+            
+            <!-- Cards de Resumo -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Receita -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500 card-hover transition-all">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase">Receitas</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1" id="displayIncome">R$ 0,00</h3>
+                        </div>
+                        <div class="p-2 bg-emerald-100 rounded-lg text-emerald-600">
+                            <i class="fas fa-arrow-up"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Despesas -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-red-500 card-hover transition-all">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase">Despesas (Fixas+Var)</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1" id="displayExpenses">R$ 0,00</h3>
+                        </div>
+                        <div class="p-2 bg-red-100 rounded-lg text-red-600">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Investimentos -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500 card-hover transition-all">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase">Investimentos</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1" id="displayInvestments">R$ 0,00</h3>
+                        </div>
+                        <div class="p-2 bg-blue-100 rounded-lg text-blue-600">
+                            <i class="fas fa-piggy-bank"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saldo Final -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-gray-500 card-hover transition-all" id="balanceCard">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase">Saldo em Caixa</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1" id="displayBalance">R$ 0,00</h3>
+                        </div>
+                        <div class="p-2 bg-gray-100 rounded-lg text-gray-600">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2" id="savingsRate">Taxa de Poupança: 0%</p>
+                </div>
+            </div>
+
+            <!-- Área de Conteúdo Principal -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Formulário de Lançamento -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm h-fit sticky top-24">
+                    <h2 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2 flex justify-between items-center">
+                        <span id="formTitle">Novo Lançamento</span>
+                        <button onclick="resetForm()" id="btnCancelEdit" class="hidden text-xs text-red-500 hover:text-red-700">Cancelar Edição</button>
+                    </h2>
+                    
+                    <form id="transactionForm" onsubmit="handleTransactionSubmit(event)" class="space-y-4">
+                        <input type="hidden" id="transactionId">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Descrição</label>
+                            <input type="text" id="descInput" required placeholder="Ex: Aluguel, Salário..." 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Valor (R$)</label>
+                                <input type="number" id="amountInput" step="0.01" required placeholder="0,00" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Data</label>
+                                <input type="date" id="dateInput" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Categoria</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="type" value="receita" class="peer sr-only" checked>
+                                    <div class="p-2 text-center rounded-lg border border-gray-200 peer-checked:bg-emerald-100 peer-checked:text-emerald-700 peer-checked:border-emerald-500 text-sm transition-all hover:bg-gray-50">
+                                        <i class="fas fa-arrow-up mr-1"></i> Receita
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="type" value="investimento" class="peer sr-only">
+                                    <div class="p-2 text-center rounded-lg border border-gray-200 peer-checked:bg-blue-100 peer-checked:text-blue-700 peer-checked:border-blue-500 text-sm transition-all hover:bg-gray-50">
+                                        <i class="fas fa-chart-line mr-1"></i> Invest.
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="type" value="fixa" class="peer sr-only">
+                                    <div class="p-2 text-center rounded-lg border border-gray-200 peer-checked:bg-red-100 peer-checked:text-red-700 peer-checked:border-red-500 text-sm transition-all hover:bg-gray-50">
+                                        <i class="fas fa-home mr-1"></i> Fixa
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="radio" name="type" value="variavel" class="peer sr-only">
+                                    <div class="p-2 text-center rounded-lg border border-gray-200 peer-checked:bg-orange-100 peer-checked:text-orange-700 peer-checked:border-orange-500 text-sm transition-all hover:bg-gray-50">
+                                        <i class="fas fa-shopping-cart mr-1"></i> Variável
+                                    </div>
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2 italic"><i class="fas fa-info-circle mr-1"></i> Despesas Fixas são copiadas automaticamente para o mês seguinte se ele estiver vazio.</p>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform active:scale-95 flex justify-center items-center">
+                            <i class="fas fa-plus mr-2"></i> Adicionar Lançamento
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Lista de Transações -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm flex flex-col min-h-[400px]">
+                    <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                        <h2 class="font-bold text-gray-700">Extrato do Mês</h2>
+                        <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded border" id="transactionCount">0 itens</span>
+                    </div>
+                    
+                    <div class="overflow-x-auto flex-grow">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-xs text-gray-500 uppercase border-b bg-gray-50">
+                                    <th class="px-4 py-3 font-medium">Data</th>
+                                    <th class="px-4 py-3 font-medium">Descrição</th>
+                                    <th class="px-4 py-3 font-medium">Categoria</th>
+                                    <th class="px-4 py-3 font-medium text-right">Valor</th>
+                                    <th class="px-4 py-3 font-medium text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsList" class="text-sm">
+                                <!-- Conteúdo gerado via JS -->
+                            </tbody>
+                        </table>
+                        
+                        <!-- Estado Vazio -->
+                        <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-gray-400">
+                            <i class="fas fa-clipboard-list text-4xl mb-3 opacity-20"></i>
+                            <p>Nenhum lançamento neste mês.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISTA RELATÓRIO ANUAL ================= -->
+        <div id="annualView" class="hidden space-y-6 animate-fade-in">
+            <div class="bg-white p-6 rounded-xl shadow-sm mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Relatório Anual <span id="annualYearDisplay"></span></h2>
+                <p class="text-gray-500">Uma visão geral do seu desempenho financeiro para auxiliar no planejamento futuro.</p>
+            </div>
+
+            <!-- Totais do Ano -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                    <p class="text-sm text-emerald-600 font-semibold uppercase">Total Receitas</p>
+                    <p class="text-2xl font-bold text-emerald-800 mt-1" id="annualIncome">R$ 0,00</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+                    <p class="text-sm text-red-600 font-semibold uppercase">Total Despesas</p>
+                    <p class="text-2xl font-bold text-red-800 mt-1" id="annualExpense">R$ 0,00</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <p class="text-sm text-blue-600 font-semibold uppercase">Total Investido</p>
+                    <p class="text-2xl font-bold text-blue-800 mt-1" id="annualInvest">R$ 0,00</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p class="text-sm text-gray-600 font-semibold uppercase">Média Mensal de Economia</p>
+                    <p class="text-2xl font-bold text-gray-800 mt-1" id="annualSavings">R$ 0,00</p>
+                </div>
+            </div>
+
+            <!-- Tabela Detalhada -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="p-4 border-b bg-gray-50">
+                    <h3 class="font-bold text-gray-700">Detalhamento por Mês</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-xs text-gray-500 uppercase border-b">
+                                <th class="px-6 py-3">Mês</th>
+                                <th class="px-6 py-3 text-emerald-600">Receita</th>
+                                <th class="px-6 py-3 text-red-600">Desp. Fixa</th>
+                                <th class="px-6 py-3 text-orange-600">Desp. Variável</th>
+                                <th class="px-6 py-3 text-blue-600">Investimentos</th>
+                                <th class="px-6 py-3 text-right">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="annualTableBody" class="text-sm divide-y">
+                            <!-- JS vai popular -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-yellow-800 text-sm">
+                <i class="fas fa-lightbulb mr-2 text-yellow-600"></i>
+                <strong>Dica para o Próximo Ano:</strong> Use o valor da "Média Mensal de Economia" para definir metas de investimento mais agressivas. Se suas Despesas Variáveis superam 30% da renda, considere revisar gastos supérfluos.
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Rodapé com Informações do Desenvolvedor -->
+    <footer class="bg-slate-800 text-white py-8 mt-auto border-t border-slate-700">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+            
+            <!-- Logo e Slogan -->
+            <div class="text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-2 mb-2">
+                    <i class="fas fa-wallet text-emerald-400"></i>
+                    <span class="font-bold text-lg">Finanças P.<span class="text-emerald-400"> Pro</span></span>
+                </div>
+                <p class="text-slate-400 text-sm">Simplificando sua jornada para a liberdade financeira.</p>
+            </div>
+            
+            <!-- Links Sociais / Contato -->
+            <div class="flex items-center gap-6">
+                <a href="https://github.com/EweFiamoncini" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
+                    <div class="p-2 bg-slate-700 rounded-full group-hover:bg-emerald-500 transition-colors">
+                        <i class="fab fa-github text-xl"></i>
+                    </div>
+                    <span class="text-[10px] uppercase tracking-wider">GitHub</span>
+                </a>
+                <a href="https://www.linkedin.com/in/ewertonfiamoncini/" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
+                    <div class="p-2 bg-slate-700 rounded-full group-hover:bg-blue-500 transition-colors">
+                        <i class="fab fa-linkedin-in text-xl"></i>
+                    </div>
+                    <span class="text-[10px] uppercase tracking-wider">LinkedIn</span>
+                </a>
+                <a href="mailto:ewertonfiamoncini20@gmail.com" class="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors">
+                    <div class="p-2 bg-slate-700 rounded-full group-hover:bg-red-500 transition-colors">
+                        <i class="fas fa-envelope text-xl"></i>
+                    </div>
+                    <span class="text-[10px] uppercase tracking-wider">Contato</span>
+                </a>
+            </div>
+
+            <!-- Créditos -->
+            <div class="text-center md:text-right text-slate-500 text-xs">
+                <p class="mb-1">Desenvolvido por <i class="fas fa-code text-emerald-500 mx-1"></i><strong>Ewerton Fiamoncini | Dev FullStack</strong></p>
+                <p>&copy; 2024 Finanças P. Pro. v1.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ================= ESTADO E CONFIGURAÇÃO =================
+        let transactions = [];
+        let currentDate = new Date();
+        let itemToDeleteId = null; // Armazena o ID temporariamente
+        
+        const categories = {
+            'receita': { label: 'Receita', class: 'text-receita bg-receita', icon: 'fa-arrow-up' },
+            'fixa': { label: 'Despesa Fixa', class: 'text-fixa bg-fixa', icon: 'fa-home' },
+            'variavel': { label: 'Despesa Variável', class: 'text-variavel bg-variavel', icon: 'fa-shopping-cart' },
+            'investimento': { label: 'Investimento', class: 'text-investimento bg-investimento', icon: 'fa-chart-line' }
+        };
+
+        // ================= INICIALIZAÇÃO =================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            updateDateDisplay();
+            renderAll();
+            setTodayDateInput();
+        });
+
+        function setTodayDateInput() {
+            const today = new Date();
+            const offset = today.getTimezoneOffset();
+            const localDate = new Date(today.getTime() - (offset*60*1000));
+            document.getElementById('dateInput').value = localDate.toISOString().split('T')[0];
+        }
+
+        // ================= GERENCIAMENTO DE DADOS =================
+        function loadData() {
+            const stored = localStorage.getItem('financasProData');
+            if (stored) {
+                transactions = JSON.parse(stored);
+                transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('financasProData', JSON.stringify(transactions));
+            renderAll();
+        }
+
+        // ================= IMPORTAÇÃO AUTOMÁTICA =================
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            autoImportFixedExpenses();
+            updateDateDisplay();
+            renderAll();
+        }
+
+        function autoImportFixedExpenses() {
+            const targetMonth = currentDate.getMonth();
+            const targetYear = currentDate.getFullYear();
+            const hasFixedExpenses = transactions.some(t => {
+                const tDate = new Date(t.date + 'T12:00:00');
+                return t.type === 'fixa' && tDate.getMonth() === targetMonth && tDate.getFullYear() === targetYear;
+            });
+            if (hasFixedExpenses) return;
+
+            let sourceMonthData = [];
+            let checkDate = new Date(currentDate);
+
+            for (let i = 1; i <= 12; i++) {
+                checkDate.setMonth(checkDate.getMonth() - 1);
+                const sMonth = checkDate.getMonth();
+                const sYear = checkDate.getFullYear();
+                const fixedExpensesInMonth = transactions.filter(t => {
+                    const tDate = new Date(t.date + 'T12:00:00');
+                    return t.type === 'fixa' && tDate.getMonth() === sMonth && tDate.getFullYear() === sYear;
+                });
+                if (fixedExpensesInMonth.length > 0) {
+                    sourceMonthData = fixedExpensesInMonth;
+                    break;
+                }
+            }
+
+            if (sourceMonthData.length > 0) {
+                let copiedCount = 0;
+                sourceMonthData.forEach(item => {
+                    const oldDate = new Date(item.date + 'T12:00:00');
+                    const newDay = oldDate.getDate();
+                    const newDateObj = new Date(targetYear, targetMonth, newDay);
+                    const newDateStr = `${newDateObj.getFullYear()}-${String(newDateObj.getMonth() + 1).padStart(2, '0')}-${String(newDateObj.getDate()).padStart(2, '0')}`;
+
+                    transactions.push({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                        desc: item.desc,
+                        amount: item.amount,
+                        date: newDateStr,
+                        type: 'fixa'
+                    });
+                    copiedCount++;
+                });
+
+                if (copiedCount > 0) {
+                    saveData();
+                    showNotification();
+                }
+            }
+        }
+
+        function showNotification() {
+            const notif = document.getElementById('copyNotification');
+            notif.classList.remove('hidden');
+            notif.classList.add('flex');
+            setTimeout(() => {
+                notif.classList.add('hidden');
+                notif.classList.remove('flex');
+            }, 3000);
+        }
+
+        function updateDateDisplay() {
+            const options = { month: 'long', year: 'numeric' };
+            document.getElementById('currentDateDisplay').textContent = currentDate.toLocaleDateString('pt-BR', options);
+            document.getElementById('annualYearDisplay').textContent = currentDate.getFullYear();
+        }
+
+        function switchView(viewName) {
+            const monthly = document.getElementById('monthlyView');
+            const annual = document.getElementById('annualView');
+            const btnMonthly = document.getElementById('btnMonthly');
+            const btnAnnual = document.getElementById('btnAnnual');
+
+            if (viewName === 'monthly') {
+                monthly.classList.remove('hidden');
+                annual.classList.add('hidden');
+                btnMonthly.classList.replace('bg-slate-700', 'bg-emerald-500');
+                btnMonthly.classList.replace('text-gray-300', 'text-white');
+                btnAnnual.classList.replace('bg-emerald-500', 'bg-slate-700');
+                btnAnnual.classList.replace('text-white', 'text-gray-300');
+            } else {
+                monthly.classList.add('hidden');
+                annual.classList.remove('hidden');
+                btnAnnual.classList.replace('bg-slate-700', 'bg-emerald-500');
+                btnAnnual.classList.replace('text-gray-300', 'text-white');
+                btnMonthly.classList.replace('bg-emerald-500', 'bg-slate-700');
+                btnMonthly.classList.replace('text-white', 'text-gray-300');
+                renderAnnualReport();
+            }
+        }
+
+        // ================= CRUD TRANSAÇÕES =================
+        function handleTransactionSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('transactionId').value;
+            const desc = document.getElementById('descInput').value;
+            const amount = parseFloat(document.getElementById('amountInput').value);
+            const date = document.getElementById('dateInput').value;
+            const type = document.querySelector('input[name="type"]:checked').value;
+
+            if (!desc || isNaN(amount) || !date) return;
+
+            if (id) {
+                const index = transactions.findIndex(t => t.id === id);
+                if (index !== -1) transactions[index] = { id, desc, amount, date, type };
+            } else {
+                transactions.push({
+                    id: Date.now().toString(),
+                    desc,
+                    amount,
+                    date,
+                    type
+                });
+            }
+            
+            transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            saveData();
+            resetForm();
+        }
+
+        function editTransaction(id) {
+            const t = transactions.find(tr => tr.id === id);
+            if (!t) return;
+            document.getElementById('transactionId').value = t.id;
+            document.getElementById('descInput').value = t.desc;
+            document.getElementById('amountInput').value = t.amount;
+            document.getElementById('dateInput').value = t.date;
+            const radios = document.getElementsByName('type');
+            for(const radio of radios) { if(radio.value === t.type) radio.checked = true; }
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save mr-2"></i> Atualizar';
+            document.getElementById('submitBtn').classList.replace('bg-slate-800', 'bg-blue-600');
+            document.getElementById('formTitle').textContent = 'Editar Lançamento';
+            document.getElementById('btnCancelEdit').classList.remove('hidden');
+        }
+
+        // ================= NOVO SISTEMA DE EXCLUSÃO (MODAL) =================
+        function prepareDelete(id) {
+            itemToDeleteId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            itemToDeleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function confirmDelete() {
+            if (itemToDeleteId) {
+                transactions = transactions.filter(t => t.id !== itemToDeleteId);
+                saveData();
+                closeDeleteModal();
+                
+                // Resetar formulário se estiver editando o item que foi deletado
+                if(document.getElementById('transactionId').value === itemToDeleteId) {
+                    resetForm();
+                }
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('transactionForm').reset();
+            document.getElementById('transactionId').value = '';
+            setTodayDateInput();
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-plus mr-2"></i> Adicionar Lançamento';
+            document.getElementById('submitBtn').classList.replace('bg-blue-600', 'bg-slate-800');
+            document.getElementById('formTitle').textContent = 'Novo Lançamento';
+            document.getElementById('btnCancelEdit').classList.add('hidden');
+            document.querySelector('input[name="type"][value="receita"]').checked = true;
+        }
+
+        // ================= RENDERIZAÇÃO MENSAL =================
+        function renderAll() {
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            const monthlyData = transactions.filter(t => {
+                const tDate = new Date(t.date + 'T12:00:00');
+                return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+            });
+
+            renderDashboard(monthlyData);
+            renderList(monthlyData);
+            if(!document.getElementById('annualView').classList.contains('hidden')) renderAnnualReport();
+        }
+
+        function renderDashboard(data) {
+            let income = 0, fixedExp = 0, variableExp = 0, investments = 0;
+            data.forEach(t => {
+                if (t.type === 'receita') income += t.amount;
+                else if (t.type === 'fixa') fixedExp += t.amount;
+                else if (t.type === 'variavel') variableExp += t.amount;
+                else if (t.type === 'investimento') investments += t.amount;
+            });
+
+            const totalExpenses = fixedExp + variableExp;
+            const balance = income - totalExpenses - investments;
+            
+            document.getElementById('displayIncome').textContent = formatCurrency(income);
+            document.getElementById('displayExpenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('displayInvestments').textContent = formatCurrency(investments);
+            const balEl = document.getElementById('displayBalance');
+            balEl.textContent = formatCurrency(balance);
+            balEl.className = `text-2xl font-bold mt-1 ${balance >= 0 ? 'text-gray-800' : 'text-red-600'}`;
+
+            let savingsRate = 0;
+            if (income > 0) savingsRate = (investments / income) * 100;
+            document.getElementById('savingsRate').textContent = `Taxa de Investimento: ${savingsRate.toFixed(1)}% da receita`;
+        }
+
+        function renderList(data) {
+            const tbody = document.getElementById('transactionsList');
+            const emptyState = document.getElementById('emptyState');
+            const countBadge = document.getElementById('transactionCount');
+            tbody.innerHTML = '';
+            countBadge.textContent = `${data.length} itens`;
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                data.forEach(t => {
+                    const catConfig = categories[t.type];
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b hover:bg-gray-50 transition-colors group';
+                    const dateObj = new Date(t.date + 'T12:00:00');
+                    const dateFormatted = dateObj.toLocaleDateString('pt-BR');
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${dateFormatted}</td>
+                        <td class="px-4 py-3 font-medium text-gray-800">${t.desc}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${catConfig.class}">
+                                <i class="fas ${catConfig.icon} mr-1"></i> ${catConfig.label}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right font-bold ${t.type === 'receita' ? 'text-emerald-600' : 'text-gray-700'}">
+                            ${t.type === 'receita' ? '+' : '-'} ${formatCurrency(t.amount)}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="editTransaction('${t.id}')" class="text-blue-500 hover:text-blue-700 mx-1 p-1 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <!-- ALTERADO PARA CHAMAR prepareDelete -->
+                            <button onclick="prepareDelete('${t.id}')" class="text-red-400 hover:text-red-600 mx-1 p-1 hover:bg-red-50 rounded transition-colors" title="Excluir">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // ================= RENDERIZAÇÃO ANUAL =================
+        function renderAnnualReport() {
+            const year = currentDate.getFullYear();
+            const yearData = transactions.filter(t => new Date(t.date).getFullYear() === year);
+            const monthlyStats = Array(12).fill(0).map(() => ({ receita: 0, fixa: 0, variavel: 0, investimento: 0 }));
+
+            yearData.forEach(t => {
+                const month = new Date(t.date + 'T12:00:00').getMonth();
+                monthlyStats[month][t.type] += t.amount;
+            });
+
+            let totalInc = 0, totalExp = 0, totalInv = 0;
+            const tbody = document.getElementById('annualTableBody');
+            tbody.innerHTML = '';
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+            monthlyStats.forEach((stat, index) => {
+                totalInc += stat.receita;
+                totalExp += (stat.fixa + stat.variavel);
+                totalInv += stat.investimento;
+
+                if (stat.receita > 0 || stat.fixa > 0 || stat.variavel > 0 || stat.investimento > 0) {
+                    const saldoMes = stat.receita - (stat.fixa + stat.variavel) - stat.investimento;
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-6 py-3 font-medium text-gray-700">${monthNames[index]}</td>
+                        <td class="px-6 py-3 text-emerald-600 bg-emerald-50/30">${formatCurrency(stat.receita)}</td>
+                        <td class="px-6 py-3 text-red-600 bg-red-50/30">${formatCurrency(stat.fixa)}</td>
+                        <td class="px-6 py-3 text-orange-600 bg-orange-50/30">${formatCurrency(stat.variavel)}</td>
+                        <td class="px-6 py-3 text-blue-600 bg-blue-50/30">${formatCurrency(stat.investimento)}</td>
+                        <td class="px-6 py-3 text-right font-bold ${saldoMes >= 0 ? 'text-gray-700' : 'text-red-600'}">${formatCurrency(saldoMes)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('annualIncome').textContent = formatCurrency(totalInc);
+            document.getElementById('annualExpense').textContent = formatCurrency(totalExp);
+            document.getElementById('annualInvest').textContent = formatCurrency(totalInv);
+            const monthsWithData = monthlyStats.filter(m => m.receita > 0 || m.fixa > 0).length || 1;
+            const avgSavings = (totalInc - totalExp) / monthsWithData;
+            document.getElementById('annualSavings').textContent = formatCurrency(avgSavings);
+        }
+
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+    </script>
+</body>
+</html>
