@@ -12,8 +12,8 @@ Tudo roda diretamente no navegador, utilizando **Local Storage** para persistên
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="assets/dashboard-preview.png" alt="Dashboard Mensal" width="800">
-  <img src="assets/dashboard-preview2.png" alt="Dashboard Mensal" width="800">
+  <img src="assets/dashboard-preview.PNG" alt="Dashboard Mensal" width="800">
+  <img src="assets/dashboard-preview2.PNG" alt="Dashboard Mensal" width="800">
 </div>
 
 ---
